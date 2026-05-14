@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { LogOut, Plus, Send, MessageCircle, Hash } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-export const Route = createFileRoute("/chat")({ component: ChatPage });
+export const Route = createFileRoute("/chat")({ component: ChatPage, ssr: false });
 
 type Thread = { id: string; title: string; created_by: string; last_message_at: string };
 type Message = { id: string; thread_id: string; user_id: string; content: string; created_at: string };
