@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogOut, Plus, Send, MessageCircle, Hash } from "lucide-react";
+import { LogOut, Plus, Send, MessageCircle, Hash, Users, Search, UserCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/chat")({ component: ChatPage, ssr: false });
@@ -135,6 +135,12 @@ function ChatPage() {
             </DialogContent>
           </Dialog>
         </div>
+
+        <nav className="px-3 pb-2 grid grid-cols-3 gap-1">
+          <Button asChild variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1"><Link to="/directory"><Search className="size-4" /><span className="text-xs">Find</span></Link></Button>
+          <Button asChild variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1"><Link to="/friends"><Users className="size-4" /><span className="text-xs">Friends</span></Link></Button>
+          <Button asChild variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1"><Link to="/profile"><UserCircle className="size-4" /><span className="text-xs">Profile</span></Link></Button>
+        </nav>
 
         <ScrollArea className="flex-1 px-2">
           <div className="space-y-1 pb-4">
