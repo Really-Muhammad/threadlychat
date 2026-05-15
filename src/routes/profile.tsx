@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, AtSign, Mail, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({ component: ProfilePage, ssr: false });
 
@@ -55,34 +55,65 @@ function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b">
-        <div className="max-w-2xl mx-auto px-6 h-14 flex items-center gap-3">
+      <header className="border-b border-sidebar-border bg-sidebar text-sidebar-foreground">
+        <div className="max-w-3xl mx-auto px-6 h-14 flex items-center gap-3">
           <Button asChild variant="ghost" size="icon"><Link to="/chat"><ArrowLeft className="size-4" /></Link></Button>
-          <h1 className="font-semibold">Your profile</h1>
+          <h1 className="font-semibold">My Account</h1>
         </div>
       </header>
-      <main className="max-w-2xl mx-auto px-6 py-8">
-        <form onSubmit={save} className="space-y-6">
-          <div className="flex items-center gap-4">
-            <Avatar className="size-20">
-              <AvatarImage src={avatarUrl || undefined} />
-              <AvatarFallback className="text-lg">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="text-sm text-muted-foreground">{user.email}</div>
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        {/* Discord-style profile card: banner + overlapping avatar */}
+        <div className="rounded-xl overflow-hidden border bg-card shadow-soft">
+          <div className="h-28 sm:h-32" style={{ background: "var(--gradient-brand)" }} />
+          <div className="px-5 pb-5 -mt-12 sm:-mt-14">
+            <div className="flex items-end justify-between gap-3">
+              <Avatar className="size-24 sm:size-28 ring-4 ring-card">
+                <AvatarImage src={avatarUrl || undefined} />
+                <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
+              </Avatar>
+              <Button variant="secondary" size="sm" className="gap-2 mb-1"><Pencil className="size-3.5" /> Edit</Button>
+            </div>
+            <div className="mt-4 rounded-lg bg-background/60 p-4 space-y-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-bold">Display name</div>
+                <div className="text-base font-semibold">{displayName || "Set a display name"}</div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-bold flex items-center gap-1"><AtSign className="size-3" /> Username</div>
+                <div className="text-sm">{(user.email ?? "").split("@")[0]}</div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-bold flex items-center gap-1"><Mail className="size-3" /> Email</div>
+                <div className="text-sm">{user.email}</div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-bold">About me</div>
+                <div className="text-sm whitespace-pre-wrap">{bio || <span className="text-muted-foreground italic">No bio yet.</span>}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Edit form */}
+        <form onSubmit={save} className="mt-6 rounded-xl border bg-card p-5 sm:p-6 space-y-5">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold border-b pb-3">Edit profile</div>
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-[11px] uppercase tracking-wider text-muted-foreground font-bold">Display name</Label>
+            <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" className="bg-background border-0" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="name">Display name</Label>
-            <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" />
+            <Label htmlFor="avatar" className="text-[11px] uppercase tracking-wider text-muted-foreground font-bold">Avatar URL</Label>
+            <Input id="avatar" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://…" className="bg-background border-0" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="avatar">Avatar URL</Label>
-            <Input id="avatar" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://…" />
+            <Label htmlFor="bio" className="text-[11px] uppercase tracking-wider text-muted-foreground font-bold">About me</Label>
+            <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} rows={4} placeholder="Tell people about yourself…" className="bg-background border-0 resize-none" />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="bio">Bio</Label>
-            <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} rows={4} placeholder="Tell people about yourself…" />
+          <div className="flex justify-end pt-2 border-t">
+            <Button type="submit" disabled={saving} className="gap-2" style={{ background: "var(--gradient-brand)" }}>
+              <Save className="size-4" /> {saving ? "Saving…" : "Save changes"}
+            </Button>
           </div>
-          <Button type="submit" disabled={saving} className="gap-2"><Save className="size-4" /> {saving ? "Saving…" : "Save changes"}</Button>
         </form>
       </main>
     </div>
