@@ -111,7 +111,7 @@ function ChatPage() {
   return (
     <div className="h-screen flex bg-background text-foreground">
       {/* Sidebar */}
-      <aside className="w-72 shrink-0 border-r bg-card flex flex-col">
+      <aside className="w-72 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col">
         <div className="p-4 border-b flex items-center gap-2">
           <div className="size-8 rounded-lg grid place-items-center text-primary-foreground" style={{ background: "var(--gradient-brand)" }}>
             <MessageCircle className="size-4" />
@@ -152,13 +152,13 @@ function ChatPage() {
                 key={t.id}
                 onClick={() => setActiveId(t.id)}
                 className={`w-full text-left rounded-lg px-3 py-2 transition-colors flex items-start gap-2 ${
-                  activeId === t.id ? "bg-accent text-accent-foreground" : "hover:bg-secondary"
+                  activeId === t.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/60"
                 }`}
               >
-                <Hash className="size-4 mt-0.5 text-muted-foreground" />
+                <Hash className="size-4 mt-0.5 opacity-70" />
                 <div className="min-w-0 flex-1">
                   <div className="font-medium truncate">{t.title}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs opacity-60">
                     {formatDistanceToNow(new Date(t.last_message_at), { addSuffix: true })}
                   </div>
                 </div>
@@ -180,10 +180,10 @@ function ChatPage() {
       </aside>
 
       {/* Main */}
-      <section className="flex-1 flex flex-col min-w-0">
+      <section className="flex-1 flex flex-col min-w-0 bg-background">
         {activeThread ? (
           <>
-            <header className="h-14 border-b px-6 flex items-center gap-2">
+            <header className="h-14 border-b px-6 flex items-center gap-2 bg-card/50 backdrop-blur">
               <Hash className="size-4 text-muted-foreground" />
               <h1 className="font-semibold">{activeThread.title}</h1>
             </header>
@@ -198,41 +198,50 @@ function ChatPage() {
                 const grouped = prev && prev.user_id === m.user_id && new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60 * 1000;
                 const mine = m.user_id === user.id;
                 return (
-                  <div key={m.id} className={`flex gap-3 ${grouped ? "mt-0.5" : "mt-4"}`}>
+                  <div key={m.id} className={`flex gap-3 ${grouped ? "mt-0.5" : "mt-4"} ${mine ? "flex-row-reverse" : ""}`}>
                     <div className="w-9 shrink-0">
                       {!grouped && (
-                        <Avatar className="size-9">
+                        <Avatar className="size-9 ring-2 ring-background" style={mine ? { boxShadow: "var(--shadow-soft)" } : undefined}>
                           <AvatarImage src={p?.avatar_url ?? undefined} />
                           <AvatarFallback>{initials(p?.display_name)}</AvatarFallback>
                         </Avatar>
                       )}
                     </div>
-                    <div className="min-w-0 flex-1">
+                    <div className={`min-w-0 max-w-[75%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
                       {!grouped && (
-                        <div className="flex items-baseline gap-2">
-                          <span className={`font-semibold text-sm ${mine ? "text-primary" : ""}`}>
-                            {p?.display_name ?? "User"}{mine && " (you)"}
+                        <div className={`flex items-baseline gap-2 mb-1 ${mine ? "flex-row-reverse" : ""}`}>
+                          <span className="font-semibold text-sm">
+                            {mine ? "You" : (p?.display_name ?? "User")}
                           </span>
                           <span className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                           </span>
                         </div>
                       )}
-                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{m.content}</p>
+                      <div
+                        className={`px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap break-words leading-relaxed shadow-sm ${
+                          mine
+                            ? "text-primary-foreground rounded-tr-sm"
+                            : "bg-card border rounded-tl-sm"
+                        }`}
+                        style={mine ? { background: "var(--gradient-brand)" } : undefined}
+                      >
+                        {m.content}
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <form onSubmit={sendMessage} className="border-t p-4 flex gap-2">
+            <form onSubmit={sendMessage} className="border-t p-4 flex gap-2 bg-card/50 backdrop-blur">
               <Input
                 placeholder={`Message #${activeThread.title}`}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                className="flex-1"
+                className="flex-1 rounded-full bg-background"
               />
-              <Button type="submit" disabled={!draft.trim()}><Send className="size-4" /></Button>
+              <Button type="submit" disabled={!draft.trim()} size="icon" className="rounded-full" style={{ background: "var(--gradient-brand)" }}><Send className="size-4" /></Button>
             </form>
           </>
         ) : (
