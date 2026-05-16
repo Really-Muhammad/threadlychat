@@ -8,13 +8,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogOut, Plus, Send, MessageCircle, Hash, Users, Search, UserCircle } from "lucide-react";
+import { LogOut, Plus, Send, MessageCircle, Hash, Users, Search, UserCircle, Paperclip } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/chat")({ component: ChatPage, ssr: false });
 
 type Thread = { id: string; title: string; created_by: string; last_message_at: string };
-type Message = { id: string; thread_id: string; user_id: string; content: string; created_at: string };
+type Message = { id: string; thread_id: string; user_id: string; content: string; created_at: string; attachment_url?: string | null };
 type Profile = { id: string; display_name: string | null; avatar_url: string | null };
 
 function ChatPage() {
@@ -27,6 +27,7 @@ function ChatPage() {
   const [draft, setDraft] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [openNew, setOpenNew] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,6 +99,21 @@ function ChatPage() {
     const content = draft.trim();
     setDraft("");
     const { error } = await supabase.from("messages").insert({ thread_id: activeId, user_id: user.id, content });
+    if (error) toast.error(error.message);
+  };
+
+  const uploadAttachment = async (file: File) => {
+    if (!user || !activeId) return;
+    setUploading(true);
+    const ext = file.name.split(".").pop() || "bin";
+    const path = `${user.id}/${activeId}/${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("attachments").upload(path, file);
+    if (upErr) { setUploading(false); return toast.error(upErr.message); }
+    const { data } = supabase.storage.from("attachments").getPublicUrl(path);
+    const { error } = await supabase.from("messages").insert({
+      thread_id: activeId, user_id: user.id, content: file.name, attachment_url: data.publicUrl,
+    });
+    setUploading(false);
     if (error) toast.error(error.message);
   };
 
@@ -226,7 +242,17 @@ function ChatPage() {
                         }`}
                         style={mine ? { background: "var(--gradient-brand)" } : undefined}
                       >
-                        {m.content}
+                        {m.attachment_url && /\.(png|jpe?g|gif|webp|avif)$/i.test(m.attachment_url) ? (
+                          <a href={m.attachment_url} target="_blank" rel="noreferrer" className="block">
+                            <img src={m.attachment_url} alt={m.content} className="rounded-lg max-h-72 max-w-full" />
+                          </a>
+                        ) : m.attachment_url ? (
+                          <a href={m.attachment_url} target="_blank" rel="noreferrer" className="underline">
+                            📎 {m.content}
+                          </a>
+                        ) : (
+                          m.content
+                        )}
                       </div>
                     </div>
                   </div>
@@ -235,8 +261,14 @@ function ChatPage() {
             </div>
 
             <form onSubmit={sendMessage} className="border-t p-4 flex gap-2 bg-card/50 backdrop-blur">
+              <label>
+                <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { uploadAttachment(f); e.target.value = ""; } }} />
+                <Button asChild type="button" size="icon" variant="ghost" className="rounded-full cursor-pointer" title="Attach file">
+                  <span><Paperclip className="size-4" /></span>
+                </Button>
+              </label>
               <Input
-                placeholder={`Message #${activeThread.title}`}
+                placeholder={uploading ? "Uploading…" : `Message #${activeThread.title}`}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 className="flex-1 rounded-full bg-background"

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { ArrowLeft, Save, AtSign, Mail, Pencil } from "lucide-react";
+import { ArrowLeft, Save, AtSign, Mail, Pencil, Upload } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({ component: ProfilePage, ssr: false });
 
@@ -19,6 +19,7 @@ function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
 
@@ -49,6 +50,20 @@ function ProfilePage() {
     toast.success("Profile updated");
   };
 
+  const uploadAvatar = async (file: File) => {
+    if (!user) return;
+    setUploading(true);
+    const ext = file.name.split(".").pop() || "png";
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+    if (upErr) { setUploading(false); return toast.error(upErr.message); }
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    setAvatarUrl(data.publicUrl);
+    await supabase.from("profiles").upsert({ id: user.id, avatar_url: data.publicUrl });
+    setUploading(false);
+    toast.success("Avatar updated");
+  };
+
   if (loading || !user) return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>;
 
   const initials = (displayName || user.email || "?").trim().split(/\s+/).map((s) => s[0]).slice(0, 2).join("").toUpperCase();
@@ -71,7 +86,10 @@ function ProfilePage() {
                 <AvatarImage src={avatarUrl || undefined} />
                 <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
               </Avatar>
-              <Button variant="secondary" size="sm" className="gap-2 mb-1"><Pencil className="size-3.5" /> Edit</Button>
+              <label className="mb-1">
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAvatar(f); }} />
+                <Button asChild variant="secondary" size="sm" className="gap-2 cursor-pointer"><span><Upload className="size-3.5" /> {uploading ? "Uploading…" : "Upload"}</span></Button>
+              </label>
             </div>
             <div className="mt-4 rounded-lg bg-background/60 p-4 space-y-4">
               <div>
