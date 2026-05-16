@@ -41,6 +41,30 @@ export type Database = {
         }
         Relationships: []
       }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           attachment_url: string | null
@@ -83,6 +107,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          last_seen_at: string
         }
         Insert: {
           avatar_url?: string | null
@@ -90,6 +115,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          last_seen_at?: string
         }
         Update: {
           avatar_url?: string | null
@@ -97,6 +123,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          last_seen_at?: string
         }
         Relationships: []
       }
