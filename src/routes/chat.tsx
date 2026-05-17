@@ -9,11 +9,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { LogOut, Plus, Send, MessageCircle, Hash, Users, Search, UserCircle, Paperclip, Mic, Square, SmilePlus } from "lucide-react";
+import { LogOut, Plus, Send, MessageCircle, Hash, Users, Search, UserCircle, Paperclip, Mic, SmilePlus, Phone } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { VoiceNote, RecordingBar } from "@/components/chat/VoiceNote";
 import { VoiceCall } from "@/components/chat/VoiceCall";
-import { Phone } from "lucide-react";
 
 export const Route = createFileRoute("/chat")({ component: ChatPage, ssr: false });
 
@@ -46,7 +45,6 @@ function ChatPage() {
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recSeconds, setRecSeconds] = useState(0);
-  const [cancelRec, setCancelRec] = useState(false);
   const [inCall, setInCall] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Record<string, number>>({});
   const [presence, setPresence] = useState<Set<string>>(new Set());
@@ -221,7 +219,6 @@ function ChatPage() {
       const mr = new MediaRecorder(stream);
       chunksRef.current = [];
       cancelRecRef.current = false;
-      setCancelRec(false);
       mr.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
@@ -251,7 +248,6 @@ function ChatPage() {
 
   const cancelRecording = () => {
     cancelRecRef.current = true;
-    setCancelRec(true);
     recRef.current?.stop();
     recRef.current = null;
     setRecording(false);
