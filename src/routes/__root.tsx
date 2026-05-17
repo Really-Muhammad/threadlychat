@@ -77,10 +77,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Connect — Thread-based Chat" },
       { name: "description", content: "Connect: a clean thread-based chat app to start conversations and chat in real time." },
       { property: "og:title", content: "Connect — Thread-based Chat" },
-      { property: "og:description", content: "A clean thread-based chat app for real-time conversations." },
+      { property: "og:description", content: "Connect: a clean thread-based chat app to start conversations and chat in real time." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Connect — Thread-based Chat" },
+      { name: "twitter:description", content: "Connect: a clean thread-based chat app to start conversations and chat in real time." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/825cdf0e-fea6-465b-a6ce-5f1868367ae9" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/825cdf0e-fea6-465b-a6ce-5f1868367ae9" },
     ],
     links: [
       {
