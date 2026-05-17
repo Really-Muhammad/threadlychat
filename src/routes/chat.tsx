@@ -11,6 +11,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner";
 import { LogOut, Plus, Send, MessageCircle, Hash, Users, Search, UserCircle, Paperclip, Mic, Square, SmilePlus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { VoiceNote, RecordingBar } from "@/components/chat/VoiceNote";
+import { VoiceCall } from "@/components/chat/VoiceCall";
+import { Phone } from "lucide-react";
 
 export const Route = createFileRoute("/chat")({ component: ChatPage, ssr: false });
 
@@ -42,11 +45,16 @@ function ChatPage() {
   const [openNew, setOpenNew] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [recSeconds, setRecSeconds] = useState(0);
+  const [cancelRec, setCancelRec] = useState(false);
+  const [inCall, setInCall] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Record<string, number>>({});
   const [presence, setPresence] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cancelRecRef = useRef(false);
   const typingChRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const lastTypingSent = useRef(0);
 
@@ -212,9 +220,14 @@ function ChatPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream);
       chunksRef.current = [];
+      cancelRecRef.current = false;
+      setCancelRec(false);
       mr.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
+        if (recTimerRef.current) { clearInterval(recTimerRef.current); recTimerRef.current = null; }
+        setRecSeconds(0);
+        if (cancelRecRef.current) { chunksRef.current = []; return; }
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         const file = new File([blob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
         await uploadAttachment(file, "🎤 Voice message");
@@ -222,12 +235,23 @@ function ChatPage() {
       mr.start();
       recRef.current = mr;
       setRecording(true);
+      setRecSeconds(0);
+      recTimerRef.current = setInterval(() => setRecSeconds((s) => s + 1), 1000);
     } catch (err) {
       toast.error("Microphone access denied");
     }
   };
 
   const stopRecording = () => {
+    cancelRecRef.current = false;
+    recRef.current?.stop();
+    recRef.current = null;
+    setRecording(false);
+  };
+
+  const cancelRecording = () => {
+    cancelRecRef.current = true;
+    setCancelRec(true);
     recRef.current?.stop();
     recRef.current = null;
     setRecording(false);
@@ -335,9 +359,18 @@ function ChatPage() {
             <header className="h-14 border-b px-6 flex items-center gap-2 bg-card/50 backdrop-blur">
               <Hash className="size-4 text-muted-foreground" />
               <h1 className="font-semibold">{activeThread.title}</h1>
-              <span className="ml-auto text-xs text-muted-foreground">
+              <span className="ml-auto text-xs text-muted-foreground mr-2">
                 {presence.size} online
               </span>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="rounded-full text-primary hover:bg-primary/10"
+                title="Start voice call"
+                onClick={() => setInCall(true)}
+              >
+                <Phone className="size-4" />
+              </Button>
             </header>
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
@@ -388,7 +421,7 @@ function ChatPage() {
                           style={mine ? { background: "var(--gradient-brand)" } : undefined}
                         >
                           {isAudio ? (
-                            <audio controls src={m.attachment_url!} className="max-w-full" />
+                            <VoiceNote url={m.attachment_url!} mine={mine} />
                           ) : isImage ? (
                             <a href={m.attachment_url!} target="_blank" rel="noreferrer" className="block">
                               <img src={m.attachment_url!} alt={m.content} className="rounded-lg max-h-72 max-w-full" />
@@ -451,30 +484,41 @@ function ChatPage() {
               )}
             </div>
 
-            <form onSubmit={sendMessage} className="border-t p-4 flex gap-2 bg-card/50 backdrop-blur">
-              <label>
-                <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { uploadAttachment(f); e.target.value = ""; } }} />
-                <Button asChild type="button" size="icon" variant="ghost" className="rounded-full cursor-pointer" title="Attach file">
-                  <span><Paperclip className="size-4" /></span>
-                </Button>
-              </label>
-              <Button
-                type="button"
-                size="icon"
-                variant={recording ? "destructive" : "ghost"}
-                className="rounded-full"
-                onClick={recording ? stopRecording : startRecording}
-                title={recording ? "Stop recording" : "Record voice message"}
-              >
-                {recording ? <Square className="size-4" /> : <Mic className="size-4" />}
-              </Button>
-              <Input
-                placeholder={uploading ? "Uploading…" : recording ? "Recording…" : `Message #${activeThread.title}`}
-                value={draft}
-                onChange={(e) => { setDraft(e.target.value); broadcastTyping(); }}
-                className="flex-1 rounded-full bg-background"
-              />
-              <Button type="submit" disabled={!draft.trim()} size="icon" className="rounded-full" style={{ background: "var(--gradient-brand)" }}><Send className="size-4" /></Button>
+            <form onSubmit={sendMessage} className="border-t p-4 flex gap-2 items-center bg-card/50 backdrop-blur">
+              {recording ? (
+                <RecordingBar seconds={recSeconds} onStop={stopRecording} onCancel={cancelRecording} />
+              ) : (
+                <>
+                  <label>
+                    <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { uploadAttachment(f); e.target.value = ""; } }} />
+                    <Button asChild type="button" size="icon" variant="ghost" className="rounded-full cursor-pointer" title="Attach file">
+                      <span><Paperclip className="size-4" /></span>
+                    </Button>
+                  </label>
+                  <Input
+                    placeholder={uploading ? "Uploading…" : `Message #${activeThread.title}`}
+                    value={draft}
+                    onChange={(e) => { setDraft(e.target.value); broadcastTyping(); }}
+                    className="flex-1 rounded-full bg-background"
+                  />
+                  {draft.trim() ? (
+                    <Button type="submit" size="icon" className="rounded-full" style={{ background: "var(--gradient-brand)" }}>
+                      <Send className="size-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="icon"
+                      className="rounded-full text-primary-foreground"
+                      style={{ background: "var(--gradient-brand)" }}
+                      onClick={startRecording}
+                      title="Record voice message"
+                    >
+                      <Mic className="size-4" />
+                    </Button>
+                  )}
+                </>
+              )}
             </form>
           </>
         ) : (
@@ -486,6 +530,15 @@ function ChatPage() {
           </div>
         )}
       </section>
+      {inCall && activeThread && (
+        <VoiceCall
+          threadId={activeThread.id}
+          threadTitle={activeThread.title}
+          userId={user.id}
+          profiles={profiles}
+          onLeave={() => setInCall(false)}
+        />
+      )}
     </div>
   );
 }
