@@ -15,6 +15,7 @@ import { Route as DirectoryRouteImport } from './routes/directory'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CallRouteImport } from './routes/call.'
 
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
@@ -46,6 +47,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CallRoute = CallRouteImport.update({
+  id: '/call/',
+  path: '/call/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/directory': typeof DirectoryRoute
   '/friends': typeof FriendsRoute
   '/profile': typeof ProfileRoute
+  '/call/': typeof CallRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/directory': typeof DirectoryRoute
   '/friends': typeof FriendsRoute
   '/profile': typeof ProfileRoute
+  '/call': typeof CallRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,12 +79,20 @@ export interface FileRoutesById {
   '/directory': typeof DirectoryRoute
   '/friends': typeof FriendsRoute
   '/profile': typeof ProfileRoute
+  '/call/': typeof CallRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/chat' | '/directory' | '/friends' | '/profile'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/chat'
+    | '/directory'
+    | '/friends'
+    | '/profile'
+    | '/call/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/chat' | '/directory' | '/friends' | '/profile'
+  to: '/' | '/auth' | '/chat' | '/directory' | '/friends' | '/profile' | '/call'
   id:
     | '__root__'
     | '/'
@@ -85,6 +101,7 @@ export interface FileRouteTypes {
     | '/directory'
     | '/friends'
     | '/profile'
+    | '/call/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,6 +111,7 @@ export interface RootRouteChildren {
   DirectoryRoute: typeof DirectoryRoute
   FriendsRoute: typeof FriendsRoute
   ProfileRoute: typeof ProfileRoute
+  CallRoute: typeof CallRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -140,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/call/': {
+      id: '/call/'
+      path: '/call'
+      fullPath: '/call/'
+      preLoaderRoute: typeof CallRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -150,6 +175,7 @@ const rootRouteChildren: RootRouteChildren = {
   DirectoryRoute: DirectoryRoute,
   FriendsRoute: FriendsRoute,
   ProfileRoute: ProfileRoute,
+  CallRoute: CallRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
