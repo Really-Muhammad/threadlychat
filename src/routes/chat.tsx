@@ -9,10 +9,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { LogOut, Plus, Send, MessageCircle, Hash, Users, Search, UserCircle, Paperclip, Mic, SmilePlus, Phone } from "lucide-react";
+import { LogOut, Plus, Send, MessageCircle, Hash, Users, Search, UserCircle, Paperclip, Mic, SmilePlus, Phone, Video } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { VoiceNote, RecordingBar } from "@/components/chat/VoiceNote";
-import { VoiceCall } from "@/components/chat/VoiceCall";
 
 export const Route = createFileRoute("/chat")({ component: ChatPage, ssr: false });
 
@@ -45,9 +44,9 @@ function ChatPage() {
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recSeconds, setRecSeconds] = useState(0);
-  const [inCall, setInCall] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Record<string, number>>({});
   const [presence, setPresence] = useState<Set<string>>(new Set());
+  const [voiceRoom, setVoiceRoom] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
@@ -79,6 +78,41 @@ function ChatPage() {
     });
     return () => { clearInterval(iv); supabase.removeChannel(ch); };
   }, [user]);
+
+  // Track who's in the voice room for the active thread (Discord-style live count)
+  useEffect(() => {
+    if (!activeId || !user) { setVoiceRoom(new Set()); return; }
+    const ch = supabase.channel(`call-${activeId}`, { config: { presence: { key: `peek-${user.id}` } } });
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState();
+      const ids = Object.keys(state).filter((k) => !k.startsWith("peek-"));
+      setVoiceRoom(new Set(ids));
+    });
+    ch.subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [activeId, user]);
+
+  const startCall = async (withVideo: boolean) => {
+    if (!user || !activeThread) return;
+    const me = profiles[user.id];
+    const payload = {
+      from: user.id,
+      fromName: me?.display_name ?? "Someone",
+      fromAvatar: me?.avatar_url ?? null,
+      threadId: activeThread.id,
+      threadTitle: activeThread.title,
+      video: withVideo,
+    };
+    // Ring everyone we know about (except self)
+    const targets = Object.keys(profiles).filter((id) => id !== user.id);
+    await Promise.all(targets.map(async (id) => {
+      const ch = supabase.channel(`user-${id}`);
+      await new Promise<void>((res) => ch.subscribe((s) => s === "SUBSCRIBED" && res()));
+      await ch.send({ type: "broadcast", event: "ring", payload });
+      supabase.removeChannel(ch);
+    }));
+    navigate({ to: "/call/$threadId", params: { threadId: activeThread.id }, search: withVideo ? { video: 1 } : {} });
+  };
 
   // Load threads + profiles
   useEffect(() => {
@@ -358,14 +392,34 @@ function ChatPage() {
               <span className="ml-auto text-xs text-muted-foreground mr-2">
                 {presence.size} online
               </span>
+              {voiceRoom.size > 0 && (
+                <Link
+                  to="/call/$threadId"
+                  params={{ threadId: activeThread.id }}
+                  className="text-xs text-green-500 font-medium mr-2 flex items-center gap-1 hover:underline"
+                  title="Join voice room"
+                >
+                  <span className="size-1.5 rounded-full bg-green-500 animate-pulse" />
+                  {voiceRoom.size} in voice
+                </Link>
+              )}
               <Button
                 size="icon"
                 variant="ghost"
                 className="rounded-full text-primary hover:bg-primary/10"
                 title="Start voice call"
-                onClick={() => setInCall(true)}
+                onClick={() => startCall(false)}
               >
                 <Phone className="size-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="rounded-full text-primary hover:bg-primary/10"
+                title="Start video call"
+                onClick={() => startCall(true)}
+              >
+                <Video className="size-4" />
               </Button>
             </header>
 
@@ -526,15 +580,6 @@ function ChatPage() {
           </div>
         )}
       </section>
-      {inCall && activeThread && (
-        <VoiceCall
-          threadId={activeThread.id}
-          threadTitle={activeThread.title}
-          userId={user.id}
-          profiles={profiles}
-          onLeave={() => setInCall(false)}
-        />
-      )}
     </div>
   );
 }
