@@ -10,7 +10,7 @@ type Thread = { id: string; title: string };
 
 const searchSchema = z.object({ video: z.coerce.number().optional() });
 
-export const Route = createFileRoute("/call/")({
+export const Route = createFileRoute("/call/$threadId")({
   component: CallPage,
   ssr: false,
   validateSearch: searchSchema,
