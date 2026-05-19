@@ -15,7 +15,7 @@ import { Route as DirectoryRouteImport } from './routes/directory'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as CallRouteImport } from './routes/call.'
+import { Route as CallThreadIdRouteImport } from './routes/call.$threadId'
 
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
@@ -47,9 +47,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CallRoute = CallRouteImport.update({
-  id: '/call/',
-  path: '/call/',
+const CallThreadIdRoute = CallThreadIdRouteImport.update({
+  id: '/call/$threadId',
+  path: '/call/$threadId',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -60,7 +60,7 @@ export interface FileRoutesByFullPath {
   '/directory': typeof DirectoryRoute
   '/friends': typeof FriendsRoute
   '/profile': typeof ProfileRoute
-  '/call/': typeof CallRoute
+  '/call/$threadId': typeof CallThreadIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,7 +69,7 @@ export interface FileRoutesByTo {
   '/directory': typeof DirectoryRoute
   '/friends': typeof FriendsRoute
   '/profile': typeof ProfileRoute
-  '/call': typeof CallRoute
+  '/call/$threadId': typeof CallThreadIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,7 +79,7 @@ export interface FileRoutesById {
   '/directory': typeof DirectoryRoute
   '/friends': typeof FriendsRoute
   '/profile': typeof ProfileRoute
-  '/call/': typeof CallRoute
+  '/call/$threadId': typeof CallThreadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,9 +90,16 @@ export interface FileRouteTypes {
     | '/directory'
     | '/friends'
     | '/profile'
-    | '/call/'
+    | '/call/$threadId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/chat' | '/directory' | '/friends' | '/profile' | '/call'
+  to:
+    | '/'
+    | '/auth'
+    | '/chat'
+    | '/directory'
+    | '/friends'
+    | '/profile'
+    | '/call/$threadId'
   id:
     | '__root__'
     | '/'
@@ -101,7 +108,7 @@ export interface FileRouteTypes {
     | '/directory'
     | '/friends'
     | '/profile'
-    | '/call/'
+    | '/call/$threadId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -111,7 +118,7 @@ export interface RootRouteChildren {
   DirectoryRoute: typeof DirectoryRoute
   FriendsRoute: typeof FriendsRoute
   ProfileRoute: typeof ProfileRoute
-  CallRoute: typeof CallRoute
+  CallThreadIdRoute: typeof CallThreadIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -158,11 +165,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/call/': {
-      id: '/call/'
-      path: '/call'
-      fullPath: '/call/'
-      preLoaderRoute: typeof CallRouteImport
+    '/call/$threadId': {
+      id: '/call/$threadId'
+      path: '/call/$threadId'
+      fullPath: '/call/$threadId'
+      preLoaderRoute: typeof CallThreadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -175,7 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   DirectoryRoute: DirectoryRoute,
   FriendsRoute: FriendsRoute,
   ProfileRoute: ProfileRoute,
-  CallRoute: CallRoute,
+  CallThreadIdRoute: CallThreadIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
